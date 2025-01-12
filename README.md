@@ -3,3 +3,5 @@ A tool for matching K-12 course names and descriptions to standardized NCES Scho
 
 ## Instructions
 Run with ```python sced_matcher.py```.
+
+![til](./misc/demo_gif.gif)
