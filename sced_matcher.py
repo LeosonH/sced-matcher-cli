@@ -3,9 +3,10 @@ import time
 import pandas as pd
 import os
 import re
+from dotenv import load_dotenv
 
-with open('gpt_apikey.txt') as api_key:
-    openai_key = api_key.readline()
+load_dotenv()
+openai_key = os.getenv("OPENAI_API_KEY")
 
 
 def get_sced_match(course_input, client, return_details=False):
