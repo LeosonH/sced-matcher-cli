@@ -2,6 +2,7 @@ from openai import OpenAI
 import time
 import pandas as pd
 import os
+import re
 
 with open('gpt_apikey.txt') as api_key:
     openai_key = api_key.readline()
@@ -41,12 +42,13 @@ def get_sced_match(course_input, client, return_details=False):
         time.sleep(2)
         
     messages = client.beta.threads.messages.list(thread_id=thread.id)
-    answer = messages.data[0].content[0].text.value.split(",")
-
-    if int(answer[0]) < 10000:
-        sced_code = '0' + str(answer[0])
+    answer = messages.data[0].content[0].text.value.split("|")
+    sced_code_clean = re.sub('[^0-9]','', answer[0])
+    
+    if int(sced_code_clean) < 10000:
+        sced_code = '0' + str(sced_code_clean)
     else:
-        sced_code = answer[0]
+        sced_code = sced_code_clean
     
     if return_details:
         course_name = answer[1].strip() if len(answer) > 1 else "N/A"
