@@ -4,4 +4,6 @@ A tool for matching K-12 course names and descriptions to standardized NCES Scho
 ## Instructions
 Run with ```python sced_matcher.py```.
 
+There are two options - you can search for an individual course code, or provide a file path to a csv file with multiple rows of course names/descriptions.
+
 ![til](./misc/demo_gif.gif)
