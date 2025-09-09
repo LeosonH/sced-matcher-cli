@@ -15,7 +15,7 @@ def get_sced_match(course_input, client, return_details=False):
     message = client.beta.threads.messages.create(
         thread_id=thread.id,
         role="user",
-        content=course_input.strip().replace('/', '') + '. If there is no exact match, find the closest match. Always provide a match, even if unsure.'
+        content=course_input.strip().replace('/', '') + '. Search carefully. If there is no exact match, find the closest match. Always provide a matching SCED code, even if unsure.'
     )
 
     my_updated_assistant = client.beta.assistants.update(
