@@ -1,4 +1,6 @@
-from openai import OpenAI
+from google import genai
+from google.genai import types
+import httpx
 import time
 import pandas as pd
 import os
@@ -6,57 +8,37 @@ import re
 from dotenv import load_dotenv
 
 load_dotenv()
-openai_key = os.getenv("OPENAI_API_KEY")
-
+gemini_key = os.getenv("GEMINI_API_KEY")
+doc_url="https://nbviewer.org/github/LeosonH/sced-matcher-cli/blob/main/data/sced_v12.pdf"
+doc_data=httpx.get(doc_url).content
 
 def get_sced_match(course_input, client, return_details=False):
-    thread = client.beta.threads.create()
 
-    message = client.beta.threads.messages.create(
-        thread_id=thread.id,
-        role="user",
-        content=course_input.strip().replace('/', '') + '. Search carefully. If there is no exact match, find the closest match. Always provide a matching SCED code, even if unsure.'
-    )
+    prompt = f"""Please find the most appropriate 5-digit SCED code for this course: "{course_input.strip().replace('/', '')}"
+            Format your answer with only the SCED Code, SCED Course Name, and SCED Course Description, separated by a '|'."""
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=[
+                types.Part.from_bytes(
+                data=doc_data,
+                mime_type='application/pdf',
+                ),
+                prompt])
 
-    my_updated_assistant = client.beta.assistants.update(
-      "asst_PbpkEKciHCmAJS4Yf4uKAUV5",
-        tool_resources={
-        "code_interpreter": {
-          "file_ids": ["file-kino7A5APplnta6Alp1x8xx7"]
-        }
-      }, model="gpt-4o"
-    )
-
-    run = client.beta.threads.runs.create(
-        thread_id=thread.id,
-        assistant_id='asst_PbpkEKciHCmAJS4Yf4uKAUV5',
-    )
-
-    while True:
-        run_status = client.beta.threads.runs.retrieve(thread_id=thread.id, 
-                                                       run_id=run.id)
-        if run_status.status == "completed":
-            break
-        elif run_status.status == "failed":
-            print("Run failed:", run_status.last_error)
-            return None
-        time.sleep(2)
+        result = response.text.split('|')
+        sced_code = result[0].strip()
+        sced_course_name = result[1].strip()
+        sced_course_description = result[2].strip()
         
-    messages = client.beta.threads.messages.list(thread_id=thread.id)
-    answer = messages.data[0].content[0].text.value.split("|")
-    sced_code_clean = re.sub('[^0-9]','', answer[0])
-    
-    if int(sced_code_clean) < 10000:
-        sced_code = '0' + str(sced_code_clean)
-    else:
-        sced_code = sced_code_clean
-    
-    if return_details:
-        course_name = answer[1].strip() if len(answer) > 1 else "N/A"
-        course_description = answer[2].strip() if len(answer) > 2 else "N/A"
-        return sced_code, course_name, course_description
-    
-    return sced_code
+        if return_details:
+            return sced_code, sced_course_name, sced_course_description
+        
+        return sced_code
+        
+    except Exception as e:
+        print(f"Error getting SCED match: {str(e)}")
+        return None
 
 def process_csv_file(input_file_path, output_file_path):
     if not os.path.exists(input_file_path):
@@ -75,7 +57,7 @@ def process_csv_file(input_file_path, output_file_path):
         
         print(f"Processing {len(df)} courses...")
         
-        client = OpenAI(api_key=openai_key)
+        client = genai.Client(api_key=gemini_key)
         sced_codes = []
         
         for index, row in df.iterrows():
@@ -94,7 +76,7 @@ def process_csv_file(input_file_path, output_file_path):
         
     except Exception as e:
         print(f"Error processing CSV file: {str(e)}")
-
+        
 def main():
     print("SCED Matcher - CSV Processing Tool")
     print("1. Single course lookup")
@@ -104,7 +86,7 @@ def main():
     
     if choice == "1":
         user_input = input("Enter Course Name or Description: ")
-        client = OpenAI(api_key=openai_key)
+        client = genai.Client(api_key=gemini_key)
         
         print("Processing...")
         result = get_sced_match(user_input, client, return_details=True)
