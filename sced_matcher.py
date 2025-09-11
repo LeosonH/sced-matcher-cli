@@ -6,11 +6,14 @@ import pandas as pd
 import os
 import re
 from dotenv import load_dotenv
+import pathlib
+
 
 load_dotenv()
+
 gemini_key = os.getenv("GEMINI_API_KEY")
-doc_url="https://nbviewer.org/github/LeosonH/sced-matcher-cli/blob/main/data/sced_v12.pdf"
-doc_data=httpx.get(doc_url).content
+filepath=pathlib.Path('data/sced_v12.pdf')
+doc_data=filepath.read_bytes()
 
 def get_sced_match(course_input, client, return_details=False):
 
